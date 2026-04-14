@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Estima — Market Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Syne:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="styles.css"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- Top bar -->
+<nav class="topbar">
+  <a href="/" class="logo" style="text-decoration:none;">Estima<span>.</span></a>
+  <div style="display:flex;align-items:center;gap:16px;">
+    <a href="/" class="nav-link">Price Estimator</a>
+    <div class="badge">Market Dashboard</div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero" style="padding-bottom:32px;">
+  <div class="hero-eyebrow">Ames, Iowa · 1,022 Sales</div>
+  <h1>Housing Market<br><em>Analytics.</em></h1>
+  <p class="hero-sub">
+    Real statistics from the Ames Housing dataset — neighborhood breakdowns,
+    quality premiums, and price trends across decades.
+  </p>
+</section>
+
+<!-- Dashboard -->
+<div class="container" style="max-width:1100px;">
+
+  <!-- Stat cards -->
+  <div class="dash-cards" id="statCards">
+    <div class="dash-card anim anim-1">
+      <div class="dash-card-label">Median Price</div>
+      <div class="dash-card-value" id="statMedian">—</div>
+    </div>
+    <div class="dash-card anim anim-2">
+      <div class="dash-card-label">Average Price</div>
+      <div class="dash-card-value" id="statMean">—</div>
+    </div>
+    <div class="dash-card anim anim-3">
+      <div class="dash-card-label">Typical Range</div>
+      <div class="dash-card-value" id="statRange">—</div>
+    </div>
+    <div class="dash-card anim anim-4">
+      <div class="dash-card-label">Total Sales</div>
+      <div class="dash-card-value" id="statSales">—</div>
+    </div>
+  </div>
+
+  <!-- Neighborhood chart -->
+  <div class="panel" style="margin-bottom:24px;">
+    <div class="panel-head">
+      <span class="panel-title">Median Price by Neighborhood</span>
+      <span class="panel-title" style="color:var(--text-dim);font-size:11px;">sorted high → low</span>
+    </div>
+    <div class="panel-body">
+      <div class="chart-legend" id="nbLegend"></div>
+      <div class="chart-wrap chart-wrap-tall">
+        <canvas id="nbChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quality + Decade side by side -->
+  <div class="dash-two-col">
+
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">Price by Overall Quality</span>
+        <span class="panel-title" style="color:var(--text-dim);font-size:11px;">1 = poor · 10 = excellent</span>
+      </div>
+      <div class="panel-body">
+        <div class="chart-wrap">
+          <canvas id="qualChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">Price by Decade Built</span>
+        <span class="panel-title" style="color:var(--text-dim);font-size:11px;">median sale price</span>
+      </div>
+      <div class="panel-body">
+        <div class="chart-wrap">
+          <canvas id="decChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Loading / error state -->
+  <div class="status-msg" id="dashStatus" style="text-align:center;margin:32px 0;"></div>
+
+</div>
+
+<footer>Estima · AI Real Estate Agent · Ames Housing Dataset · Week 2 Project</footer>
+
+<script src="dashboard.js"></script>
+</body>
+</html>
