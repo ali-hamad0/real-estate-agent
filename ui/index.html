@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Estima — AI Real Estate Pricing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Syne:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+
+<!-- Top bar -->
+<nav class="topbar">
+  <div class="logo">Estima<span>.</span></div>
+  <div style="display:flex;align-items:center;gap:16px;">
+    <a href="/dashboard.html" class="nav-link">Market Dashboard</a>
+    <div class="badge">Ames Housing · ML + LLM</div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-eyebrow">AI-Powered Price Intelligence</div>
+  <h1>Describe a home.<br>Get an <em>instant estimate.</em></h1>
+</section>
+
+<!-- App -->
+<div class="container">
+
+  <!-- Step indicator -->
+  <div class="steps" id="steps">
+    <div class="step active" id="step1"><div class="step-num">1</div><span>Describe</span></div>
+    <div class="step" id="step2"><div class="step-num">2</div><span>Review</span></div>
+    <div class="step" id="step3"><div class="step-num">3</div><span>Fill Gaps</span></div>
+    <div class="step" id="step4"><div class="step-num">4</div><span>Result</span></div>
+  </div>
+
+  <!-- Panel 1: Query -->
+  <div class="panel" id="queryPanel">
+    <div class="panel-head">
+      <span class="panel-title">Describe the property or ask a market question</span>
+    </div>
+    <div class="panel-body">
+      <div class="query-wrap">
+        <textarea id="queryInput" maxlength="500"
+          placeholder="e.g. 3-bedroom home built in 2003, 2 full baths, 1,800 sqft living area, 2-car garage, finished basement, good condition, CollgCr neighborhood..."
+          oninput="updateChar(); autoResize(this)"></textarea>
+        <div class="char-count" id="charCount">0 / 500</div>
+      </div>
+
+      <div class="examples">
+        <span class="chip" onclick="fillExample(0)">3-bed ranch, big garage, good area</span>
+        <span class="chip" onclick="fillExample(1)">Small older home, no garage, needs work</span>
+        <span class="chip" onclick="fillExample(2)">New 4-bed luxury build, 3 baths, large lot</span>
+        <span class="chip chip-insight" onclick="fillInsight(0)">Which neighborhoods are cheapest?</span>
+        <span class="chip chip-insight" onclick="fillInsight(1)">How does quality affect price?</span>
+        <span class="chip chip-insight" onclick="fillInsight(2)">What's the average house price?</span>
+      </div>
+
+      <button class="btn btn-primary" id="extractBtn" onclick="runExtraction()">
+        <span id="extractBtnText">Analyse Property</span>
+      </button>
+      <div class="status-msg" id="queryStatus"></div>
+    </div>
+  </div>
+
+  <!-- Panel: Market Insights (shown when intent = analysis) -->
+  <div class="panel hidden" id="insightPanel">
+    <div class="panel-head">
+      <span class="panel-title">Market Insights</span>
+      <span class="panel-title" style="color:var(--cyan);">AI Analysis</span>
+    </div>
+    <div class="panel-body">
+      <div class="insight-highlights" id="insightHighlights"></div>
+      <div class="insight-narrative" id="insightNarrative"></div>
+      <button class="btn btn-ghost" onclick="reset()">← New Query</button>
+    </div>
+  </div>
+
+  <!-- Panel 2: Extraction results -->
+  <div class="panel hidden" id="extractionPanel">
+    <div class="panel-head">
+      <span class="panel-title">Extracted features</span>
+      <span class="panel-title" id="extractSummary" style="color:var(--ink)"></span>
+    </div>
+    <div class="panel-body">
+      <div class="comp-row">
+        <div class="comp-bar"><div class="comp-fill" id="compFill" style="width:0%"></div></div>
+        <div class="comp-label" id="compLabel">0 / 10</div>
+      </div>
+      <div class="feat-grid" id="featGrid"></div>
+    </div>
+  </div>
+
+  <!-- Panel 3: Gap filling -->
+  <div class="panel hidden" id="gapPanel">
+    <div class="panel-head">
+      <span class="panel-title">Fill missing features</span>
+      <span class="panel-title" style="color:var(--danger);font-size:10px;" id="gapCount"></span>
+    </div>
+    <div class="panel-body">
+      <p class="gap-hint">
+        The model couldn't extract these from your description. Fill in what you know —
+        leave blank to skip, but the more you provide the better the estimate.
+      </p>
+      <div class="gap-grid" id="gapGrid"></div>
+      <button class="btn btn-primary" id="predictBtn" onclick="runPrediction()">
+        <span id="predictBtnText">Get Price Estimate</span>
+      </button>
+      <div class="status-msg" id="gapStatus"></div>
+    </div>
+  </div>
+
+  <!-- Panel 4: Result -->
+  <div class="panel hidden" id="resultPanel">
+    <div class="panel-head">
+      <span class="panel-title">Price estimate</span>
+      <span class="panel-title" style="color:var(--success);">✓ Complete</span>
+    </div>
+    <div class="panel-body">
+
+      <div class="result-layout">
+        <div class="result-block anim anim-1">
+          <div class="result-block-label">Estimated value</div>
+          <div class="price-row">
+            <div class="price" id="priceVal">—</div>
+            <button class="btn-copy" id="copyBtn" onclick="copyPrice()" title="Copy price">
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            </button>
+          </div>
+          <div class="price-note">Ames Iowa housing market</div>
+        </div>
+        <div class="result-block anim anim-2">
+          <div class="result-block-label">Analysis</div>
+          <div class="interpretation" id="interp">—</div>
+        </div>
+      </div>
+
+      <div class="mkt-row anim anim-3" id="mktRow">
+        <div class="mkt-label">vs Market</div>
+        <div class="mkt-track" id="mktTrack">
+          <div class="mkt-range" id="mktRange"></div>
+          <div class="mkt-median" id="mktMedian"></div>
+          <div class="mkt-price-marker" id="mktMarker"></div>
+        </div>
+        <div class="mkt-note" id="mktNote"></div>
+      </div>
+
+      <button class="btn btn-ghost" onclick="reset()">← New Estimate</button>
+    </div>
+  </div>
+
+</div>
+
+<footer>Estima · AI Real Estate Agent · Ames Housing Dataset · Week 2 Project</footer>
+
+<script src="app.js?v=3"></script>
+</body>
+</html>
