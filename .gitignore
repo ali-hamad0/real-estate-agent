@@ -26,5 +26,5 @@ htmlcov/
 .pytest_cache/
 .mypy_cache/
 
-# ML model (too large for git, download from Colab)
-app/models/*.pkl
+# ML model — committed directly (7.7 MB, within git limits)
+# app/models/*.pkl

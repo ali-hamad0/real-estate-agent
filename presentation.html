@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estima — AI Real Estate Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #08090e;
+    --violet: #8b5cf6;
+    --gold: #f59e0b;
+    --cyan: #22d3ee;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --card-bg: rgba(255,255,255,0.04);
+    --card-border: rgba(255,255,255,0.08);
+    --card-hover: rgba(255,255,255,0.07);
+    --red: #ef4444;
+  }
+
+  body {
+    background: #000;
+    font-family: 'Inter', sans-serif;
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+  }
+
+  .deck-container {
+    width: 100vw;
+    height: 56.25vw; /* 16:9 */
+    max-height: 100vh;
+    max-width: 177.78vh;
+    position: relative;
+    overflow: hidden;
+    background: var(--bg);
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 5% 7%;
+    opacity: 0;
+    transform: translateX(60px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .slide.active {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  .slide.exit-left {
+    opacity: 0;
+    transform: translateX(-60px);
+  }
+
+  /* Glow blobs */
+  .glow-violet {
+    position: absolute;
+    width: 40%;
+    height: 50%;
+    background: radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .glow-violet.top-right { top: -10%; right: -10%; }
+  .glow-violet.bottom-left { bottom: -15%; left: -10%; }
+  .glow-violet.center { top: 20%; left: 25%; width: 50%; height: 60%; opacity: 0.5; }
+  .glow-gold {
+    position: absolute;
+    width: 30%;
+    height: 40%;
+    background: radial-gradient(circle, rgba(245,158,11,0.08) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .slide-content {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  /* Slide number */
+  .slide-num {
+    position: absolute;
+    bottom: 3.5%;
+    right: 5%;
+    font-family: 'Inter', sans-serif;
+    font-size: clamp(10px, 1.2vw, 16px);
+    color: var(--muted);
+    opacity: 0.5;
+    z-index: 2;
+  }
+
+  /* Typography */
+  .title-gradient {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(48px, 7vw, 120px);
+    background: linear-gradient(135deg, var(--violet) 30%, var(--gold) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+    letter-spacing: -2px;
+  }
+
+  .slide-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: clamp(20px, 2.8vw, 44px);
+    color: var(--text);
+    margin-bottom: clamp(12px, 2vw, 36px);
+    letter-spacing: -0.5px;
+  }
+
+  .subtitle {
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    font-size: clamp(14px, 1.6vw, 26px);
+    color: var(--muted);
+    margin-top: clamp(6px, 0.8vw, 12px);
+  }
+
+  .gold-italic {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: clamp(26px, 3.8vw, 64px);
+    color: var(--gold);
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  /* Cards */
+  .glass-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: clamp(10px, 1.4vw, 22px) clamp(14px, 1.8vw, 28px);
+    backdrop-filter: blur(10px);
+    transition: background 0.3s;
+  }
+
+  /* Icon rows */
+  .icon-row {
+    display: flex;
+    align-items: center;
+    gap: clamp(10px, 1.2vw, 18px);
+    padding: clamp(8px, 1vw, 16px) 0;
+    font-size: clamp(13px, 1.4vw, 22px);
+    color: var(--text);
+    width: 100%;
+  }
+  .icon-row .icon { font-size: clamp(18px, 2vw, 30px); flex-shrink: 0; }
+  .icon-row span { font-weight: 400; }
+
+  /* Flow diagram */
+  .flow-vertical {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    width: 100%;
+    max-width: 520px;
+  }
+  .flow-step {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: clamp(10px, 1.2vw, 18px) clamp(16px, 2vw, 32px);
+    display: flex;
+    align-items: center;
+    gap: clamp(10px, 1.2vw, 18px);
+    width: 100%;
+    font-size: clamp(12px, 1.3vw, 20px);
+    font-weight: 500;
+  }
+  .flow-step .emoji { font-size: clamp(18px, 2vw, 28px); flex-shrink: 0; }
+  .flow-arrow {
+    color: var(--violet);
+    font-size: clamp(16px, 1.8vw, 26px);
+    padding: clamp(4px, 0.5vw, 8px) 0;
+    opacity: 0.7;
+  }
+
+  /* Timeline */
+  .timeline {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    width: 100%;
+    max-width: 1100px;
+  }
+  .timeline-stop {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(8px, 1vw, 14px);
+    flex: 1;
+    position: relative;
+  }
+  .timeline-dot {
+    width: clamp(14px, 1.6vw, 24px);
+    height: clamp(14px, 1.6vw, 24px);
+    border-radius: 50%;
+    border: 2px solid var(--muted);
+    background: transparent;
+    transition: all 0.3s;
+  }
+  .timeline-stop.active .timeline-dot {
+    background: var(--violet);
+    border-color: var(--violet);
+    box-shadow: 0 0 16px rgba(139,92,246,0.5);
+  }
+  .timeline-label {
+    font-size: clamp(10px, 1vw, 15px);
+    color: var(--muted);
+    text-align: center;
+    font-weight: 500;
+    transition: color 0.3s;
+    line-height: 1.3;
+  }
+  .timeline-stop.active .timeline-label { color: var(--violet); }
+  .timeline-line {
+    flex: 1;
+    height: 2px;
+    background: rgba(255,255,255,0.08);
+    margin-top: clamp(-16px, -1.8vw, -28px);
+    position: relative;
+    top: clamp(-18px, -2vw, -30px);
+  }
+  .timeline-line.filled { background: var(--violet); opacity: 0.5; }
+
+  /* Architecture pipeline */
+  .arch-pipeline {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    width: 100%;
+    max-width: 900px;
+  }
+  .arch-row {
+    display: flex;
+    align-items: center;
+    gap: clamp(6px, 0.8vw, 14px);
+    width: 100%;
+  }
+  .arch-box {
+    border-radius: 10px;
+    padding: clamp(8px, 1vw, 16px) clamp(12px, 1.4vw, 22px);
+    font-size: clamp(11px, 1.1vw, 17px);
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    white-space: nowrap;
+  }
+  .arch-box.violet { background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3); color: var(--violet); }
+  .arch-box.gold { background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: var(--gold); }
+  .arch-box.cyan { background: rgba(34,211,238,0.1); border: 1px solid rgba(34,211,238,0.25); color: var(--cyan); }
+  .arch-box.neutral { background: var(--card-bg); border: 1px solid var(--card-border); color: var(--text); }
+  .arch-arrow-label {
+    font-size: clamp(9px, 0.9vw, 14px);
+    color: var(--muted);
+    font-weight: 400;
+  }
+  .arch-connector {
+    color: var(--violet);
+    font-size: clamp(14px, 1.5vw, 22px);
+    padding: clamp(2px, 0.3vw, 5px) 0;
+    opacity: 0.5;
+    text-align: center;
+  }
+
+  /* Table */
+  .ml-table {
+    width: 100%;
+    max-width: 1000px;
+    border-collapse: collapse;
+    font-size: clamp(11px, 1.15vw, 18px);
+  }
+  .ml-table th {
+    text-align: left;
+    font-weight: 600;
+    color: var(--muted);
+    padding: clamp(6px, 0.8vw, 12px) clamp(8px, 1vw, 16px);
+    border-bottom: 1px solid var(--card-border);
+    font-size: clamp(10px, 1vw, 15px);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .ml-table td {
+    padding: clamp(8px, 0.9vw, 14px) clamp(8px, 1vw, 16px);
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    color: var(--text);
+    font-weight: 400;
+  }
+  .ml-table tr.gold-row td {
+    background: rgba(245,158,11,0.06);
+    color: var(--gold);
+    font-weight: 600;
+  }
+  .ml-table td:first-child { font-weight: 600; color: var(--violet); }
+  .ml-table tr.gold-row td:first-child { color: var(--gold); }
+
+  /* Code boxes */
+  .code-box {
+    border-radius: 12px;
+    padding: clamp(12px, 1.5vw, 24px);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(9px, 0.95vw, 15px);
+    line-height: 1.7;
+    flex: 1;
+    max-width: 48%;
+  }
+  .code-box.violet-border {
+    background: rgba(139,92,246,0.06);
+    border: 1px solid rgba(139,92,246,0.25);
+    color: rgba(255,255,255,0.85);
+  }
+  .code-box.gold-border {
+    background: rgba(245,158,11,0.05);
+    border: 1px solid rgba(245,158,11,0.25);
+    color: rgba(255,255,255,0.85);
+  }
+  .code-label {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: clamp(10px, 0.9vw, 14px);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: clamp(6px, 0.8vw, 12px);
+  }
+  .code-label.v { color: var(--violet); }
+  .code-label.g { color: var(--gold); }
+
+  /* Badges */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: clamp(4px, 0.5vw, 8px) clamp(10px, 1vw, 16px);
+    border-radius: 20px;
+    font-size: clamp(9px, 0.85vw, 13px);
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .badge.dim { background: var(--card-bg); border: 1px solid var(--card-border); color: var(--muted); }
+  .badge.win { background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3); color: var(--violet); }
+
+  /* Challenge cards */
+  .challenge-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-left: 3px solid var(--red);
+    border-radius: 12px;
+    padding: clamp(10px, 1.2vw, 20px) clamp(14px, 1.6vw, 26px);
+    flex: 1;
+    max-width: 32%;
+  }
+  .challenge-card .problem {
+    font-size: clamp(11px, 1.1vw, 17px);
+    color: var(--text);
+    margin-bottom: clamp(6px, 0.6vw, 10px);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.4;
+  }
+  .challenge-card .solution {
+    font-size: clamp(10px, 0.95vw, 15px);
+    color: #22c55e;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.4;
+  }
+
+  /* Two column layout */
+  .two-col {
+    display: flex;
+    gap: clamp(20px, 3vw, 60px);
+    width: 100%;
+    max-width: 1100px;
+  }
+  .col { flex: 1; }
+  .col-header {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: clamp(14px, 1.5vw, 24px);
+    margin-bottom: clamp(10px, 1.2vw, 20px);
+  }
+  .col-item {
+    font-size: clamp(11px, 1.1vw, 17px);
+    padding: clamp(4px, 0.5vw, 8px) 0;
+    color: var(--text);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.4;
+  }
+  .col-item .check { color: var(--violet); flex-shrink: 0; }
+  .col-item .arrow { color: var(--gold); flex-shrink: 0; }
+
+  /* Navigation */
+  .nav-controls {
+    position: fixed;
+    bottom: clamp(12px, 2vh, 28px);
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 100;
+    background: rgba(8,9,14,0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--card-border);
+    border-radius: 50px;
+    padding: 8px 16px;
+  }
+  .nav-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--card-border);
+    background: var(--card-bg);
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: all 0.2s;
+  }
+  .nav-btn:hover { background: rgba(139,92,246,0.2); border-color: var(--violet); }
+  .nav-dots {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .nav-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .nav-dot.active {
+    background: var(--violet);
+    box-shadow: 0 0 8px rgba(139,92,246,0.5);
+    width: 24px;
+    border-radius: 4px;
+  }
+  .nav-dot:hover:not(.active) { background: rgba(255,255,255,0.25); }
+
+  /* Progress bar */
+  .progress-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--violet), var(--gold));
+    transition: width 0.4s ease;
+    z-index: 10;
+  }
+
+  /* Demo slide */
+  .demo-label {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(36px, 5vw, 80px);
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: clamp(12px, 1.5vw, 24px);
+  }
+  .demo-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(3px, 0.4vw, 7px);
+    font-size: clamp(10px, 0.9vw, 14px);
+    color: var(--muted);
+  }
+  .demo-checklist span {
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .demo-note {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(9px, 0.8vw, 13px);
+    color: rgba(255,255,255,0.25);
+  }
+
+  /* Thank you slide */
+  .thank-you {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(40px, 6vw, 100px);
+    font-weight: 400;
+    color: var(--text);
+    line-height: 1;
+  }
+  .thank-sub {
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    font-size: clamp(14px, 1.6vw, 28px);
+    color: var(--muted);
+    margin-top: clamp(8px, 1vw, 16px);
+  }
+  .info-bar {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(8px, 0.7vw, 12px);
+    color: rgba(255,255,255,0.3);
+    text-align: center;
+    line-height: 1.8;
+  }
+
+  /* Market insights */
+  .mock-panel {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    width: 100%;
+    max-width: 48%;
+    aspect-ratio: 16/10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .mock-panel-label {
+    position: absolute;
+    top: 10%;
+    font-size: clamp(9px, 0.8vw, 13px);
+    color: var(--muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .mock-bar {
+    width: 70%;
+    height: 8px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.06);
+    margin: 4px 0;
+  }
+  .mock-bar.filled-v { background: linear-gradient(90deg, var(--violet), rgba(139,92,246,0.3)); width: 85%; }
+  .mock-bar.filled-g { background: linear-gradient(90deg, var(--gold), rgba(245,158,11,0.3)); width: 45%; }
+  .mock-bar.filled-c { background: linear-gradient(90deg, var(--cyan), rgba(34,211,238,0.3)); width: 65%; }
+  .stat-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: clamp(6px, 0.7vw, 12px) clamp(10px, 1.2vw, 20px);
+    display: inline-flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .stat-card .label { font-size: clamp(8px, 0.75vw, 12px); color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-card .value { font-size: clamp(12px, 1.2vw, 19px); font-weight: 700; }
+  .stat-card .value.v { color: var(--violet); }
+  .stat-card .value.g { color: var(--gold); }
+
+  /* Name tag */
+  .name-tag {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: clamp(13px, 1.4vw, 22px);
+    color: var(--text);
+    letter-spacing: 0.5px;
+  }
+  .small-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(9px, 0.8vw, 13px);
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 0.5px;
+  }
+
+  /* Quote */
+  .quote-italic {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: clamp(11px, 1.1vw, 17px);
+    color: rgba(255,255,255,0.3);
+    text-align: center;
+    margin-top: clamp(12px, 1.5vw, 28px);
+    line-height: 1.5;
+  }
+
+  /* Side by side code */
+  .code-pair {
+    display: flex;
+    gap: clamp(12px, 1.5vw, 24px);
+    width: 100%;
+    max-width: 1100px;
+  }
+  .badge-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: clamp(10px, 1.2vw, 20px);
+  }
+  .badge-note {
+    font-size: clamp(9px, 0.8vw, 13px);
+    color: var(--muted);
+    margin-left: 8px;
+  }
+
+  .challenges-row {
+    display: flex;
+    gap: clamp(10px, 1.2vw, 20px);
+    width: 100%;
+    max-width: 1100px;
+  }
+
+  /* Keyboard hint */
+  .key-hint {
+    position: fixed;
+    top: clamp(8px, 1.2vh, 18px);
+    right: clamp(10px, 1.5vw, 24px);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: rgba(255,255,255,0.2);
+    z-index: 100;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .slide { transition: none; }
+    .progress-bar { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="key-hint">← → to navigate</div>
+
+<div class="deck-container" id="deck">
+
+  <!-- SLIDE 1 — TITLE -->
+  <div class="slide active" data-slide="1">
+    <div class="glow-violet top-right"></div>
+    <div class="slide-content" style="justify-content: center; align-items: center; text-align: center;">
+      <div class="title-gradient">Estima.</div>
+      <div class="subtitle">AI-Powered Real Estate Price Intelligence</div>
+      <div style="margin-top: clamp(20px, 3vw, 50px);">
+        <div class="name-tag">Ali Hamad</div>
+      </div>
+      <div style="margin-top: clamp(8px, 1vw, 16px);">
+        <div class="small-tag">Week 2 Project · Ames Housing · ML + LLM</div>
+      </div>
+    </div>
+    <div class="slide-num">1 / 12</div>
+  </div>
+
+  <!-- SLIDE 2 — THE PROBLEM -->
+  <div class="slide" data-slide="2">
+    <div class="glow-gold" style="top:10%;left:30%;"></div>
+    <div class="slide-content" style="justify-content: center; align-items: center; gap: clamp(16px, 2.5vw, 40px); text-align: center;">
+      <div class="gold-italic">"How much is this house worth?"</div>
+      <div style="display: flex; flex-direction: column; gap: clamp(4px, 0.6vw, 10px); width: 100%; max-width: 600px;">
+        <div class="icon-row"><span class="icon">🏠</span><span>Buyers don't know fair market value</span></div>
+        <div class="icon-row"><span class="icon">🤷</span><span>Agents rely on gut feeling, not data</span></div>
+        <div class="icon-row"><span class="icon">📋</span><span>Existing tools require 20+ field forms</span></div>
+      </div>
+    </div>
+    <div class="slide-num">2 / 12</div>
+  </div>
+
+  <!-- SLIDE 3 — WHAT ESTIMA DOES -->
+  <div class="slide" data-slide="3">
+    <div class="glow-violet bottom-left" style="opacity:0.4;"></div>
+    <div class="slide-content" style="justify-content: center; align-items: center;">
+      <div class="flow-vertical">
+        <div class="flow-step"><span class="emoji">💬</span><span>"3-bed ranch, big garage, good area"</span></div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step"><span class="emoji">🤖</span><span>AI extracts 10 features</span></div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step"><span class="emoji">📊</span><span>ML model predicts price</span></div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step"><span class="emoji">💡</span><span>AI explains the result</span></div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-step" style="border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.06);"><span class="emoji">💰</span><span style="color: var(--gold);">"$187,400 — above market median"</span></div>
+      </div>
+    </div>
+    <div class="slide-num">3 / 12</div>
+  </div>
+
+  <!-- SLIDE 4 — ROADMAP -->
+  <div class="slide" data-slide="4">
+    <div class="slide-content" style="justify-content: center; align-items: center; gap: clamp(24px, 3.5vw, 60px);">
+      <div class="timeline">
+        <div class="timeline-stop active">
+          <div class="timeline-dot"></div>
+          <div class="timeline-label">Architecture</div>
+        </div>
+        <div class="timeline-line"></div>
+        <div class="timeline-stop">
+          <div class="timeline-dot"></div>
+          <div class="timeline-label">ML Pipeline</div>
+        </div>
+        <div class="timeline-line"></div>
+        <div class="timeline-stop">
+          <div class="timeline-dot"></div>
+          <div class="timeline-label">Live Demo</div>
+        </div>
+        <div class="timeline-line"></div>
+        <div class="timeline-stop">
+          <div class="timeline-dot"></div>
+          <div class="timeline-label">Challenges &<br>Next Steps</div>
+        </div>
+      </div>
+      <div class="small-tag">10 minutes · 12 slides · 1 live demo</div>
+    </div>
+    <div class="slide-num">4 / 12</div>
+  </div>
+
+  <!-- SLIDE 5 — THE ARCHITECTURE -->
+  <div class="slide" data-slide="5">
+    <div class="glow-violet" style="top:-10%;left:10%;opacity:0.3;width:35%;height:40%;"></div>
+    <div class="slide-content" style="justify-content: center; align-items: center; gap: clamp(10px, 1.4vw, 22px);">
+      <div class="slide-title" style="text-align:center;">Two-Stage Prompt Chain</div>
+      <div class="arch-pipeline">
+        <div class="arch-row" style="justify-content:center;">
+          <div class="arch-box neutral">User Query</div>
+        </div>
+        <div class="arch-connector">↓</div>
+        <div class="arch-row" style="justify-content:center; gap: clamp(8px, 1vw, 16px);">
+          <div class="arch-box violet">LLM Stage 1</div>
+          <span class="arch-arrow-label">→ extracts features →</span>
+          <div class="arch-box neutral">Pydantic Schema</div>
+        </div>
+        <div class="arch-connector">↓</div>
+        <div class="arch-row" style="justify-content:center; gap: clamp(8px, 1vw, 16px);">
+          <div class="arch-box gold">ML Model</div>
+          <span class="arch-arrow-label">→ scikit-learn pipeline →</span>
+          <div class="arch-box gold">Predicted Price</div>
+        </div>
+        <div class="arch-connector">↓</div>
+        <div class="arch-row" style="justify-content:center; gap: clamp(8px, 1vw, 16px);">
+          <div class="arch-box violet">LLM Stage 2</div>
+          <span class="arch-arrow-label">→ interprets result →</span>
+          <div class="arch-box neutral">Narrative</div>
+        </div>
+        <div class="arch-connector">↓</div>
+        <div class="arch-row" style="justify-content:center; gap: clamp(8px, 1vw, 16px);">
+          <div class="arch-box cyan">FastAPI</div>
+          <span class="arch-arrow-label">→</span>
+          <div class="arch-box cyan">Docker Container</div>
+          <span class="arch-arrow-label">→</span>
+          <div class="arch-box neutral">HTML UI</div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">5 / 12</div>
+  </div>
+
+  <!-- SLIDE 6 — ML PIPELINE -->
+  <div class="slide" data-slide="6">
+    <div class="slide-content" style="justify-content: center; align-items: center; gap: clamp(12px, 1.6vw, 28px);">
+      <div class="slide-title" style="text-align:center;">Trained Once. Loaded Once. Never Leaks.</div>
+      <table class="ml-table">
+        <thead>
+          <tr><th>Step</th><th>What</th><th>Why</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Dataset</td><td>Ames Housing · 1,022 sales</td><td>Rich, labeled, real</td></tr>
+          <tr><td>Split</td><td>Train / Validation / Test</td><td>No data leakage</td></tr>
+          <tr><td>Pipeline</td><td>ColumnTransformer + 2 models</td><td>Swappable, reproducible</td></tr>
+          <tr class="gold-row"><td>Best Model</td><td>Random Forest</td><td>Lowest validation RMSE</td></tr>
+          <tr><td>Serialized</td><td>.pkl loaded at startup</td><td>No retraining at runtime</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="slide-num">6 / 12</div>
+  </div>
+
+  <!-- SLIDE 7 — LLM PROMPT CHAIN -->
+  <div class="slide" data-slide="7">
+    <div class="slide-content" style="justify-content: center; align-items: center; gap: clamp(10px, 1.4vw, 22px);">
+      <div class="slide-title" style="text-align:center;">Prompts Are Code — Versioned and Tested</div>
+      <div class="code-pair">
+        <div class="code-box violet-border">
+          <div class="code-label v">Stage 1 — Extraction</div>
+          <div>"You are a real estate data extractor.<br>
+          Extract 10 features from the description.<br>
+          Use null if not mentioned.<br>
+          Return JSON only."</div>
+        </div>
+        <div class="code-box gold-border">
+          <div class="code-label g">Stage 2 — Explanation</div>
+          <div>"You are a real estate assistant.<br>
+          Given features + predicted price,<br>
+          explain: high or low? what drives it?<br>
+          how does it compare to the median?"</div>
+        </div>
+      </div>
+      <div class="badge-row">
+        <div class="badge dim">v1_basic</div>
+        <span style="color:var(--muted);font-size:clamp(10px,0.9vw,14px);">vs</span>
+        <div class="badge win">v1_detailed ✓ winner</div>
+        <span class="badge-note">Tested on 3 queries · detailed version chosen</span>
+      </div>
+    </div>
+    <div class="slide-num">7 / 12</div>
+  </div>
+
+  <!-- SLIDE 8 — LIVE DEMO -->
+  <div class="slide" data-slide="8">
+    <div class="glow-violet center" style="opacity:0.3;"></div>
+    <div class="slide-content" style="justify-content: center; align-items: center; gap: clamp(20px, 3vw, 50px);">
+      <div class="demo-label">🎬 LIVE DEMO</div>
+      <div class="demo-checklist">
+        <span>1. Type a property description</span>
+        <span>2. Review extracted features (green = found · red = missing)</span>
+        <span>3. Fill gaps with validated inputs</span>
+        <span>4. See predicted price + AI explanation</span>
+        <span>5. Read market position bar</span>
+      </div>
+      <div class="demo-note">Demo running on localhost:8000</div>
+    </div>
+    <div class="slide-num">8 / 12</div>
+  </div>
+
+  <!-- SLIDE 9 — BONUS: MARKET INSIGHTS -->
+  <div class="slide" data-slide="9">
+    <div class="glow-gold" style="top:5%;right:5%;opacity:0.5;"></div>
+    <div class="slide-content" style="justify-content: center; align-items: center; gap: clamp(10px, 1.4vw, 22px);">
+      <div class="slide-title" style="text-align:center;">Bonus Feature: Smart Intent Routing</div>
+      <div class="two-col" style="align-items: flex-start; justify-content: center;">
+        <div class="col" style="display:flex; align-items:center; justify-content:center;">
+          <div class="mock-panel">
+            <div class="mock-panel-label">Market Insights Panel</div>
+            <div style="display:flex;flex-direction:column;gap:10px;width:75%;margin-top:18%;">
+              <div class="mock-bar filled-v"></div>
+              <div class="mock-bar filled-g"></div>
+              <div class="mock-bar filled-c"></div>
+              <div class="mock-bar" style="width:55%;"></div>
+              <div class="mock-bar" style="width:70%;"></div>
+            </div>
+          </div>
+        </div>
+        <div class="col" style="display:flex;flex-direction:column;gap:clamp(8px,1vw,16px);">
+          <div class="icon-row"><span class="icon">🧠</span><span>Intent classifier detects analysis queries</span></div>
+          <div class="icon-row"><span class="icon">📊</span><span>Routes to pre-computed market stats engine</span></div>
+          <div class="icon-row"><span class="icon">💬</span><span>LLM narrates findings — every number from real data</span></div>
+          <div style="margin-top:clamp(6px,0.8vw,14px);">
+            <div style="font-size:clamp(9px,0.8vw,13px);color:var(--muted);margin-bottom:6px;font-family:'JetBrains Mono',monospace;">example query:</div>
+            <div style="font-size:clamp(10px,1vw,16px);color:var(--text);font-style:italic;padding:6px 10px;background:var(--card-bg);border-radius:6px;border:1px solid var(--card-border);">"Which neighborhoods are cheapest?"</div>
+          </div>
+          <div style="display:flex;gap:clamp(8px,1vw,16px);margin-top:clamp(4px,0.5vw,10px);">
+            <div class="stat-card"><div class="label">Most Expensive</div><div class="value v">NoRidge · $335,000</div></div>
+            <div class="stat-card"><div class="label">Most Affordable</div><div class="value g">MeadowV · $98,000</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">9 / 12</div>
+  </div>
+
+  <!-- SLIDE 10 — CHALLENGES -->
+  <div class="slide" data-slide="10">
+    <div class="slide-content" style="justify-content: center; align-items: center; gap: clamp(10px, 1.4vw, 22px);">
+      <div class="slide-title" style="text-align:center;">Three Real Problems — Three Clean Solutions</div>
+      <div class="challenges-row">
+        <div class="challenge-card">
+          <div class="problem"><span>⚠️</span><span>LLM returns malformed JSON</span></div>
+          <div class="solution"><span>✅</span><span>Caught with JSONDecodeError → structured fallback</span></div>
+        </div>
+        <div class="challenge-card">
+          <div class="problem"><span>⚠️</span><span>User enters invalid values (negative, out of range)</span></div>
+          <div class="solution"><span>✅</span><span>Pydantic ge/le bounds + live JS field validation</span></div>
+        </div>
+        <div class="challenge-card">
+          <div class="problem"><span>⚠️</span><span>Model file missing at startup</span></div>
+          <div class="solution"><span>✅</span><span>RuntimeError raised immediately with clear message</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">10 / 12</div>
+  </div>
+
+  <!-- SLIDE 11 — SUMMARY + WHAT'S NEXT -->
+  <div class="slide" data-slide="11">
+    <div class="glow-violet" style="bottom:-10%;left:20%;opacity:0.25;width:30%;height:35%;"></div>
+    <div class="slide-content" style="justify-content: center; align-items: center; gap: clamp(8px, 1vw, 18px);">
+      <div class="two-col" style="align-items: flex-start;">
+        <div class="col">
+          <div class="col-header" style="color:var(--violet);">What I Built</div>
+          <div class="col-item"><span class="check">✓</span><span>Two-stage LLM prompt chain</span></div>
+          <div class="col-item"><span class="check">✓</span><span>Trained ML model (Random Forest)</span></div>
+          <div class="col-item"><span class="check">✓</span><span>FastAPI + Docker deployment</span></div>
+          <div class="col-item"><span class="check">✓</span><span>HTML/CSS/JS frontend</span></div>
+          <div class="col-item"><span class="check">✓</span><span>Intent classifier + market insights</span></div>
+        </div>
+        <div class="col">
+          <div class="col-header" style="color:var(--gold);">Next Iteration</div>
+          <div class="col-item"><span class="arrow">→</span><span>Restrict CORS in production</span></div>
+          <div class="col-item"><span class="arrow">→</span><span>Add automated test coverage</span></div>
+          <div class="col-item"><span class="arrow">→</span><span>Support multiple cities</span></div>
+          <div class="col-item"><span class="arrow">→</span><span>Property comparison mode</span></div>
+          <div class="col-item"><span class="arrow">→</span><span>Public API for third parties</span></div>
+        </div>
+      </div>
+      <div class="quote-italic">"I'm proud of what I built — and I know what to improve."</div>
+    </div>
+    <div class="slide-num">11 / 12</div>
+  </div>
+
+  <!-- SLIDE 12 — THANK YOU -->
+  <div class="slide" data-slide="12">
+    <div class="glow-violet top-right" style="opacity:0.6;"></div>
+    <div class="glow-violet bottom-left" style="opacity:0.3;"></div>
+    <div class="slide-content" style="justify-content: center; align-items: center; gap: clamp(10px, 1.5vw, 24px); text-align: center;">
+      <div class="thank-you">Thank you.</div>
+      <div class="thank-sub">Questions welcome.</div>
+      <div style="margin-top: clamp(20px, 3vw, 50px);">
+        <div class="info-bar">
+          Ali Hamad &nbsp;|&nbsp; Dataset: Ames Housing &nbsp;|&nbsp; Model: Random Forest<br>
+          LLM: Llama 3.3 70B (Groq) &nbsp;|&nbsp; Prompt versions: 2 &nbsp;|&nbsp; Docker: estima:latest
+        </div>
+      </div>
+    </div>
+    <div class="slide-num">12 / 12</div>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="progress-bar" id="progressBar" style="width: 8.33%;"></div>
+
+</div>
+
+<!-- Navigation -->
+<nav class="nav-controls" aria-label="Slide navigation">
+  <button class="nav-btn" id="prevBtn" aria-label="Previous slide">&#8592;</button>
+  <div class="nav-dots" id="navDots"></div>
+  <button class="nav-btn" id="nextBtn" aria-label="Next slide">&#8594;</button>
+</nav>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const totalSlides = slides.length;
+  let currentSlide = 0;
+  let isTransitioning = false;
+
+  const progressBar = document.getElementById('progressBar');
+  const navDotsContainer = document.getElementById('navDots');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+
+  // Create dots
+  for (let i = 0; i < totalSlides; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+    dot.setAttribute('role', 'button');
+    dot.setAttribute('aria-label', 'Go to slide ' + (i + 1));
+    dot.addEventListener('click', () => goToSlide(i));
+    navDotsContainer.appendChild(dot);
+  }
+
+  function goToSlide(index) {
+    if (index === currentSlide || isTransitioning || index < 0 || index >= totalSlides) return;
+    isTransitioning = true;
+
+    const direction = index > currentSlide ? 1 : -1;
+    const oldSlide = slides[currentSlide];
+    const newSlide = slides[index];
+
+    // Remove all transition classes
+    oldSlide.classList.remove('active', 'exit-left');
+    if (direction > 0) oldSlide.classList.add('exit-left');
+    if (direction < 0) {
+      oldSlide.style.transform = 'translateX(60px)';
+      oldSlide.style.opacity = '0';
+    }
+
+    newSlide.style.transform = direction > 0 ? 'translateX(60px)' : 'translateX(-60px)';
+    newSlide.style.opacity = '0';
+
+    // Force reflow
+    void newSlide.offsetWidth;
+
+    newSlide.classList.add('active');
+    newSlide.style.transform = '';
+    newSlide.style.opacity = '';
+
+    // Reset old slide
+    setTimeout(() => {
+      oldSlide.classList.remove('exit-left');
+      oldSlide.style.transform = '';
+      oldSlide.style.opacity = '';
+      isTransitioning = false;
+    }, 500);
+
+    currentSlide = index;
+    updateUI();
+  }
+
+  function updateUI() {
+    // Progress bar
+    progressBar.style.width = ((currentSlide + 1) / totalSlides * 100) + '%';
+
+    // Dots
+    const dots = navDotsContainer.querySelectorAll('.nav-dot');
+    dots.forEach((dot, i) => {
+      dot.classList.toggle('active', i === currentSlide);
+    });
+
+    // Button states
+    prevBtn.style.opacity = currentSlide === 0 ? '0.3' : '1';
+    nextBtn.style.opacity = currentSlide === totalSlides - 1 ? '0.3' : '1';
+  }
+
+  prevBtn.addEventListener('click', () => goToSlide(currentSlide - 1));
+  nextBtn.addEventListener('click', () => goToSlide(currentSlide + 1));
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+      e.preventDefault();
+      goToSlide(currentSlide + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      goToSlide(currentSlide - 1);
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      goToSlide(0);
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      goToSlide(totalSlides - 1);
+    }
+  });
+
+  // Touch/swipe support
+  let touchStartX = 0;
+  let touchStartY = 0;
+  const deck = document.getElementById('deck');
+
+  deck.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+
+  deck.addEventListener('touchend', (e) => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+      if (dx < 0) goToSlide(currentSlide + 1);
+      else goToSlide(currentSlide - 1);
+    }
+  }, { passive: true });
+
+  // Initial state
+  updateUI();
+</script>
+</body>
+</html>
