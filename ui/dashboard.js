@@ -3,8 +3,8 @@
  * Fetches /stats and renders Chart.js visualisations.
  */
 
-const API = "http://localhost:8000";
-
+// const API = "http://localhost:8000";
+const API = "";
 // Tier → color mapping (matches design tokens)
 const TIER_COLORS = {
   luxury:     { bar: "rgba(139, 92, 246, 0.85)",  border: "#8b5cf6" },

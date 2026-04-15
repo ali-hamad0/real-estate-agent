@@ -8,7 +8,8 @@
  *   - Market bar: visualise predicted price vs Ames market range
  */
 
-const API = "http://localhost:8000";
+// const API = "http://localhost:8000";
+const API = "";
 
 // Feature display labels — must match the 10 keys the ML model expects
 const LABELS = {
