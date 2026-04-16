@@ -1,0 +1,10 @@
+Project 2 - Ali Hamad
+Dataset: Ames Housing (Kaggle)
+Best model: RandomForest  |  Test RMSE: $26,499  |  Test R²: 0.908
+LLM: llama-3.3-70b (Groq)  |  Prompt versions: 2
+Docker image: real-estate-agent
+Notebook:   real-estate-eda:https://colab.research.google.com/drive/1DaFNzDTw9hjlbwGOPVtfc4FQcicy8jwx#scrollTo=eda-01
+            real-estate-Ml:https://colab.research.google.com/drive/1RBoZ23zgf4Y155rbQ5fXf-_vD4NnMsqc
+            real-estate-prompts:https://colab.research.google.com/drive/1R1Q9PnHP1T4hXCOMaed6an-ChsIyptzo
+Repo: https://github.com/ali-hamad0/real-estate-agent
+https://github.com/ali-hamad0/real-estate-agent
